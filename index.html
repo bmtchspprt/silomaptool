@@ -3,137 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dad Map & SIM App</title>
+    <title>Dad Map App - Professional Site Assessment</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 20px; background: #f0f2f5; color: #333; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background: #f4f7f9; color: #2c3e50; }
+        .container { max-width: 850px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         
-        /* Toggle Styling */
-        .tool-selector { display: flex; gap: 10px; margin-bottom: 20px; background: #eee; padding: 5px; border-radius: 8px; }
-        .tool-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: transparent; transition: 0.3s; }
-        .tool-btn.active { background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: #007bff; }
+        /* Tool Toggle */
+        .tool-selector { display: flex; gap: 10px; margin-bottom: 25px; background: #e9ecef; padding: 6px; border-radius: 10px; }
+        .tool-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .tool-btn.active { background: #007bff; color: white; }
 
-        #map { height: 450px; width: 100%; border-radius: 8px; margin: 15px 0; border: 1px solid #ddd; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        /* Form Layout */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .full-width { grid-column: span 2; }
         
-        .search-row { display: flex; gap: 10px; margin-bottom: 10px; }
-        .search-row input { flex: 4; }
-        .search-row button { flex: 1; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; }
-
-        .submit-btn { width: 100%; background: #007bff; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; color: #7f8c8d; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #dcdde1; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        
+        /* Map Area */
+        #map { height: 400px; width: 100%; border-radius: 8px; border: 1px solid #ddd; margin-top: 10px; }
+        .btn-locate { background: #27ae60; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        
+        .submit-btn { width: 100%; background: #007bff; color: white; border: none; padding: 18px; border-radius: 8px; font-size: 1.2rem; font-weight: bold; cursor: pointer; margin-top: 20px; }
         .submit-btn:hover { background: #0056b3; }
-        .status { margin-top: 15px; text-align: center; color: #666; font-size: 0.9rem; }
+        .status { margin-top: 15px; text-align: center; font-weight: 500; color: #34495e; }
         .hidden { display: none; }
+        .offline-notice { padding: 50px; text-align: center; color: #95a5a6; border: 2px dashed #bdc3c7; border-radius: 8px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Site Assessment Tool</h2>
-
     <div class="tool-selector">
         <button class="tool-btn active" onclick="switchTool('map')">Map Assessment</button>
-        <button class="tool-btn" onclick="switchTool('sim')">SIM Tool</button>
+        <button class="tool-btn" onclick="switchTool('sim')">SIM Model (Offline)</button>
     </div>
 
-    <div id="map-section">
-        <label>Search Site Address</label>
-        <div class="search-row">
-            <input type="text" id="addressInput" placeholder="Enter address, city, or zip...">
-            <button onclick="searchAddress()">Locate</button>
-        </div>
-        <div id="map"></div>
+    <div id="map-tool">
+        <form id="assessmentForm">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="userName" required placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label>Company</label>
+                    <input type="text" id="company" required placeholder="Acme Engineering">
+                </div>
+                <div class="form-group full-width">
+                    <label>Email Address</label>
+                    <input type="email" id="userEmail" required placeholder="john@company.com">
+                </div>
+                <div class="form-group full-width">
+                    <label>Site Address</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="siteAddress" required placeholder="123 Industrial Way, Dallas, TX">
+                        <button type="button" class="btn-locate" onclick="searchAddress()">Locate</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="map"></div>
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label>Assessment Notes</label>
+                <textarea id="notes" rows="3" placeholder="Enter site-specific details..."></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">Generate Mail Report</button>
+            <div id="statusMsg" class="status"></div>
+        </form>
     </div>
 
-    <div id="sim-section" class="hidden">
-        <div style="padding: 40px; text-align: center; background: #f9f9f9; border: 2px dashed #ccc; border-radius: 8px;">
-            <h3>Site Information Model (SIM)</h3>
-            <p>Data visualization and structural modeling tools active.</p>
+    <div id="sim-tool" class="hidden">
+        <div class="offline-notice">
+            <h2>SIM Tool Offline</h2>
+            <p>The Site Information Model database is currently disconnected. Please use the Map Assessment tool.</p>
         </div>
     </div>
-
-    <form id="assessmentForm">
-        <div class="form-group">
-            <label for="siteName">Project/Site Name</label>
-            <input type="text" id="siteName" required placeholder="e.g. Riverside Industrial">
-        </div>
-
-        <div class="form-group">
-            <label for="notes">Assessment & Field Notes</label>
-            <textarea id="notes" rows="4" placeholder="Describe terrain, access issues, or site conditions..."></textarea>
-        </div>
-
-        <button type="submit" class="submit-btn" id="submitBtn">Create Apple Mail Report</button>
-        <div id="statusMsg" class="status"></div>
-    </form>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
-    // 1. Initialize Map
+    // 1. Initialize Satellite Map
     const map = L.map('map').setView([39.8283, -98.5795], 4); 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-        crossOrigin: true // Critical for html2canvas
+    
+    // Using Esri Satellite Imagery
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+        crossOrigin: true
     }).addTo(map);
 
     let currentMarker;
 
-    // 2. Tool Switching Logic
-    function switchTool(tool) {
-        const btns = document.querySelectorAll('.tool-btn');
-        btns.forEach(b => b.classList.remove('active'));
-        event.target.classList.add('active');
-
-        if (tool === 'map') {
-            document.getElementById('map-section').classList.remove('hidden');
-            document.getElementById('sim-section').classList.add('hidden');
-        } else {
-            document.getElementById('map-section').classList.add('hidden');
-            document.getElementById('sim-section').classList.remove('hidden');
-        }
-    }
-
-    // 3. Geocoding (Address Search)
+    // 2. Locate Address
     async function searchAddress() {
-        const query = document.getElementById('addressInput').value;
-        if (!query) return;
-
-        const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
-        const data = await resp.json();
+        const addr = document.getElementById('siteAddress').value;
+        if (!addr) return;
         
-        if (data.length > 0) {
-            const { lat, lon } = data[0];
-            const coords = [parseFloat(lat), parseFloat(lon)];
-            map.setView(coords, 16);
-            if (currentMarker) map.removeLayer(currentMarker);
-            currentMarker = L.marker(coords).addTo(map);
-        } else {
-            alert("Address not found. Try being more specific.");
-        }
+        try {
+            const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}`);
+            const data = await resp.json();
+            if (data.length > 0) {
+                const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+                map.setView(coords, 18); // Zoom in close for satellite
+                if (currentMarker) map.removeLayer(currentMarker);
+                currentMarker = L.marker(coords).addTo(map);
+            }
+        } catch (e) { alert("Error finding address."); }
     }
 
-    // 4. Form Submission
+    // 3. UI Toggle
+    function switchTool(tool) {
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('map-tool').classList.toggle('hidden', tool === 'sim');
+        document.getElementById('sim-tool').classList.toggle('hidden', tool === 'map');
+    }
+
+    // 4. Form Submit & Screenshot
     document.getElementById('assessmentForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const statusMsg = document.getElementById('statusMsg');
-        statusMsg.innerText = "Capturing map and preparing mail...";
+        const status = document.getElementById('statusMsg');
+        status.innerText = "Capturing Satellite View...";
 
         try {
-            // Capture only the map div
-            const mapContainer = document.getElementById('map');
-            const canvas = await html2canvas(mapContainer, { useCORS: true, logging: false });
-            const mapImageBase64 = canvas.toDataURL('image/png');
+            const canvas = await html2canvas(document.getElementById('map'), { useCORS: true });
+            const mapImg = canvas.toDataURL('image/png');
 
             const payload = {
-                siteName: document.getElementById('siteName').value,
+                user: { name: document.getElementById('userName').value, company: document.getElementById('company').value, email: document.getElementById('userEmail').value },
+                address: document.getElementById('siteAddress').value,
                 notes: document.getElementById('notes').value,
-                mapImage: mapImageBase64
+                mapImage: mapImg
             };
 
             const response = await fetch('http://localhost:3000/submit-form', {
@@ -142,14 +148,9 @@
                 body: JSON.stringify(payload)
             });
 
-            if (response.ok) {
-                statusMsg.innerText = "Success! Opening Apple Mail...";
-            } else {
-                statusMsg.innerText = "Error: Check if the Node.js server is running.";
-            }
-        } catch (err) {
-            statusMsg.innerText = "Error: " + err.message;
-        }
+            if (response.ok) status.innerText = "Success! Apple Mail is opening.";
+            else status.innerText = "Server Error. Is server.js running?";
+        } catch (err) { status.innerText = "Error: " + err.message; }
     });
 </script>
 </body>
