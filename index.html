@@ -3,45 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dad Map App - Site Assessment</title>
+    <title>Dad Map & SIM App</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { font-family: -apple-system, sans-serif; margin: 20px; background: #f4f4f9; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        #map { height: 400px; width: 100%; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ccc; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type="text"], textarea, input[type="file"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        button:hover { background: #0056b3; }
-        .status { margin-top: 10px; color: #666; font-style: italic; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 20px; background: #f0f2f5; color: #333; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        
+        /* Toggle Styling */
+        .tool-selector { display: flex; gap: 10px; margin-bottom: 20px; background: #eee; padding: 5px; border-radius: 8px; }
+        .tool-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: transparent; transition: 0.3s; }
+        .tool-btn.active { background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: #007bff; }
+
+        #map { height: 450px; width: 100%; border-radius: 8px; margin: 15px 0; border: 1px solid #ddd; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        
+        .search-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .search-row input { flex: 4; }
+        .search-row button { flex: 1; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; }
+
+        .submit-btn { width: 100%; background: #007bff; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
+        .submit-btn:hover { background: #0056b3; }
+        .status { margin-top: 15px; text-align: center; color: #666; font-size: 0.9rem; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Site Assessment Form</h2>
-    
-    <label>1. Locate Site & Mark Area</label>
-    <div id="map"></div>
+    <h2>Site Assessment Tool</h2>
+
+    <div class="tool-selector">
+        <button class="tool-btn active" onclick="switchTool('map')">Map Assessment</button>
+        <button class="tool-btn" onclick="switchTool('sim')">SIM Tool</button>
+    </div>
+
+    <div id="map-section">
+        <label>Search Site Address</label>
+        <div class="search-row">
+            <input type="text" id="addressInput" placeholder="Enter address, city, or zip...">
+            <button onclick="searchAddress()">Locate</button>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <div id="sim-section" class="hidden">
+        <div style="padding: 40px; text-align: center; background: #f9f9f9; border: 2px dashed #ccc; border-radius: 8px;">
+            <h3>Site Information Model (SIM)</h3>
+            <p>Data visualization and structural modeling tools active.</p>
+        </div>
+    </div>
 
     <form id="assessmentForm">
         <div class="form-group">
-            <label for="siteName">Site Name</label>
-            <input type="text" id="siteName" name="siteName" required placeholder="e.g. Oak Ridge Project">
+            <label for="siteName">Project/Site Name</label>
+            <input type="text" id="siteName" required placeholder="e.g. Riverside Industrial">
         </div>
 
         <div class="form-group">
-            <label for="notes">Assessment Notes</label>
-            <textarea id="notes" name="notes" rows="4" placeholder="Enter site details..."></textarea>
+            <label for="notes">Assessment & Field Notes</label>
+            <textarea id="notes" rows="4" placeholder="Describe terrain, access issues, or site conditions..."></textarea>
         </div>
 
-        <div class="form-group">
-            <label for="docUpload">Upload Additional Document (PDF/Doc)</label>
-            <input type="file" id="docUpload" accept=".pdf,.doc,.docx,.txt">
-        </div>
-
-        <button type="submit" id="submitBtn">Generate Email in Mail.app</button>
+        <button type="submit" class="submit-btn" id="submitBtn">Create Apple Mail Report</button>
         <div id="statusMsg" class="status"></div>
     </form>
 </div>
@@ -50,79 +75,82 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
-    // Initialize Map (Default to a general view)
+    // 1. Initialize Map
     const map = L.map('map').setView([39.8283, -98.5795], 4); 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
+        attribution: '© OpenStreetMap',
+        crossOrigin: true // Critical for html2canvas
     }).addTo(map);
 
-    // Form Submission Logic
+    let currentMarker;
+
+    // 2. Tool Switching Logic
+    function switchTool(tool) {
+        const btns = document.querySelectorAll('.tool-btn');
+        btns.forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+
+        if (tool === 'map') {
+            document.getElementById('map-section').classList.remove('hidden');
+            document.getElementById('sim-section').classList.add('hidden');
+        } else {
+            document.getElementById('map-section').classList.add('hidden');
+            document.getElementById('sim-section').classList.remove('hidden');
+        }
+    }
+
+    // 3. Geocoding (Address Search)
+    async function searchAddress() {
+        const query = document.getElementById('addressInput').value;
+        if (!query) return;
+
+        const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+        const data = await resp.json();
+        
+        if (data.length > 0) {
+            const { lat, lon } = data[0];
+            const coords = [parseFloat(lat), parseFloat(lon)];
+            map.setView(coords, 16);
+            if (currentMarker) map.removeLayer(currentMarker);
+            currentMarker = L.marker(coords).addTo(map);
+        } else {
+            alert("Address not found. Try being more specific.");
+        }
+    }
+
+    // 4. Form Submission
     document.getElementById('assessmentForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const submitBtn = document.getElementById('submitBtn');
         const statusMsg = document.getElementById('statusMsg');
-        
-        submitBtn.disabled = true;
-        statusMsg.innerText = "Processing site map and files...";
+        statusMsg.innerText = "Capturing map and preparing mail...";
 
         try {
-            // 1. Capture Map as Base64 Image
+            // Capture only the map div
             const mapContainer = document.getElementById('map');
-            const canvas = await html2canvas(mapContainer, { useCORS: true });
+            const canvas = await html2canvas(mapContainer, { useCORS: true, logging: false });
             const mapImageBase64 = canvas.toDataURL('image/png');
 
-            // 2. Handle File Upload
-            const fileInput = document.getElementById('docUpload');
-            let documentFileData = null;
-
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                documentFileData = {
-                    name: file.name,
-                    data: await toBase64(file)
-                };
-            }
-
-            // 3. Prepare Form Data
-            const formData = {
+            const payload = {
                 siteName: document.getElementById('siteName').value,
                 notes: document.getElementById('notes').value,
-                timestamp: new Date().toLocaleString()
+                mapImage: mapImageBase64
             };
 
-            // 4. Send to Node.js Server
-            const response = await fetch('/submit-form', {
+            const response = await fetch('http://localhost:3000/submit-form', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    formData,
-                    mapImage: mapImageBase64,
-                    documentFile: documentFileData
-                })
+                body: JSON.stringify(payload)
             });
 
             if (response.ok) {
-                statusMsg.innerText = "Success! Apple Mail should now be opening...";
+                statusMsg.innerText = "Success! Opening Apple Mail...";
             } else {
-                statusMsg.innerText = "Error: Server failed to create email.";
+                statusMsg.innerText = "Error: Check if the Node.js server is running.";
             }
-
         } catch (err) {
-            console.error(err);
             statusMsg.innerText = "Error: " + err.message;
-        } finally {
-            submitBtn.disabled = false;
         }
     });
-
-    // Helper: Convert File to Base64
-    const toBase64 = file => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
 </script>
-
 </body>
 </html>
