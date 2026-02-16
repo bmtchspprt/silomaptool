@@ -2,103 +2,164 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Site Map & SIM Assessment</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Site Assessment & SIM Tool</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { font-family: sans-serif; margin: 20px; background: #f4f4f4; }
-        .card { background: white; padding: 20px; border-radius: 10px; max-width: 900px; margin: auto; shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        #map { height: 400px; width: 100%; border-radius: 10px; margin: 15px 0; border: 2px solid #333; }
-        .btn { padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; }
-        .btn-blue { background: #007bff; width: 100%; font-size: 1.1rem; }
-        .btn-green { background: #28a745; }
-        .sim-active { border: 3px solid #e67e22 !important; }
-        .status { color: #666; font-size: 0.9rem; margin-top: 10px; text-align: center; }
+        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; color: #333; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* Layout */
+        .header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .main { display: flex; flex: 1; overflow: hidden; }
+        
+        /* Sidebar */
+        .sidebar { width: 360px; background: white; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.05); overflow-y: auto; z-index: 1000; }
+        .section-title { font-size: 0.8rem; font-weight: bold; color: #7f8c8d; text-transform: uppercase; margin: 20px 0 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        
+        input, textarea { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 0.9rem; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; }
+        .btn-search { background: var(--success); color: white; margin-bottom: 15px; }
+        .btn-generate { background: var(--accent); color: white; margin-top: 10px; }
+        .btn-clear { background: #e74c3c; color: white; padding: 8px; font-size: 0.8rem; margin-top: 5px; }
+
+        /* Map & SIM */
+        #map { flex: 1; position: relative; }
+        .sim-status { background: #fffde7; border: 1px solid #ffe57f; padding: 12px; border-radius: 6px; font-size: 0.85rem; line-height: 1.5; }
+        
+        /* Modal for Output */
+        #output-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 600px; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); z-index: 2000; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1999; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Site Assessment & SIM Tool</h2>
-    
-    <div class="grid">
-        <input type="text" id="name" placeholder="Name">
-        <input type="text" id="company" placeholder="Company">
-        <input type="email" id="email" placeholder="Your Email" style="grid-column: span 2;">
-        <div style="grid-column: span 2; display: flex; gap: 5px;">
-            <input type="text" id="address" placeholder="Enter Site Address">
-            <button class="btn btn-green" onclick="findAddress()">Locate</button>
+<div class="header">
+    <strong>S.I.M. - Site Information Modeler</strong>
+    <span style="font-size: 0.8rem; opacity: 0.8;">Satellite Assessment v3.0</span>
+</div>
+
+<div class="main">
+    <div class="sidebar">
+        <div class="section-title">Inspector Details</div>
+        <input type="text" id="name" placeholder="Your Name">
+        <input type="text" id="company" placeholder="Company Name">
+        
+        <div class="section-title">Site Location</div>
+        <input type="text" id="address" placeholder="Enter Site Address">
+        <button class="btn btn-search" onclick="findAddress()">Locate Site</button>
+        
+        <div class="section-title">SIM Modeler (Active)</div>
+        <div class="sim-status" id="sim-stats">
+            <em>Click the map to mark site boundaries.</em>
         </div>
+        <button class="btn btn-clear" onclick="resetSIM()">Reset Model</button>
+
+        <div class="section-title">Assessment Notes</div>
+        <textarea id="notes" rows="4" placeholder="Describe terrain, access, or utilities..."></textarea>
+        
+        <button class="btn btn-generate" onclick="generateReport()">Generate Final Report</button>
     </div>
 
     <div id="map"></div>
-    
-    <div id="sim-display" style="background: #eee; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-family: monospace;">
-        SIM DATA: <span id="coords">Click map to drop SIM points</span>
-    </div>
+</div>
 
-    <textarea id="notes" rows="3" placeholder="Field Notes..."></textarea>
-    <button class="btn btn-blue" onclick="sendToMail()">Generate Apple Mail Report</button>
-    <div id="status" class="status"></div>
+<div class="overlay" id="overlay"></div>
+<div id="output-modal">
+    <h3 style="margin-top:0">Report Ready!</h3>
+    <p>1. The Site Screenshot has been saved to your <strong>Downloads</strong> folder.</p>
+    <p>2. Copy the text below and paste it into your email:</p>
+    <div id="copy-box" style="background:#f8f9fa; padding:15px; border:1px solid #ddd; border-radius:5px; font-size:0.9rem; white-space: pre-wrap; max-height: 150px; overflow-y: auto;"></div>
+    <button class="btn btn-generate" style="margin-top:15px;" onclick="closeModal()">Back to Map</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
-    // Initialize Satellite Map
-    const map = L.map('map').setView([37.09, -95.71], 4);
+    // 1. Initialize Map with High-Res Satellite
+    const map = L.map('map').setView([39.8, -98.5], 4);
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Esri', crossOrigin: true
+        attribution: 'Esri',
+        crossOrigin: true
     }).addTo(map);
 
-    let marker;
-    let simPoints = [];
+    let simLine = L.polyline([], {color: '#f39c12', weight: 4}).addTo(map);
+    let markers = [];
+    let totalFeet = 0;
 
+    // 2. Address Finder
     async function findAddress() {
         const addr = document.getElementById('address').value;
+        if (!addr) return;
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}`);
         const data = await res.json();
         if (data[0]) {
-            const pos = [data[0].lat, data[0].lon];
-            map.setView(pos, 19);
-            if (marker) marker.setLatLng(pos);
-            else marker = L.marker(pos).addTo(map);
+            map.setView([data[0].lat, data[0].lon], 19);
+        } else {
+            alert("Address not found.");
         }
     }
 
-    // SIM Tool: Track coordinates and distances
+    // 3. SIM Modeler Logic (Click to Measure)
     map.on('click', (e) => {
-        const { lat, lng } = e.latlng;
-        simPoints.push(e.latlng);
-        L.circle([lat, lng], { radius: 1, color: 'orange' }).addTo(map);
-        document.getElementById('coords').innerText = `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+        const points = simLine.getLatLngs();
+        simLine.addLatLng(e.latlng);
+        
+        const m = L.circleMarker(e.latlng, {radius: 6, color: '#e67e22', fillOpacity: 0.8}).addTo(map);
+        markers.push(m);
+
+        if (points.length > 0) {
+            const lastPoint = points[points.length - 1];
+            const distMeters = lastPoint.distanceTo(e.latlng);
+            totalFeet += (distMeters * 3.28084);
+        }
+        
+        document.getElementById('sim-stats').innerHTML = 
+            `<strong>GPS:</strong> ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}<br>` +
+            `<strong>Perimeter:</strong> ${totalFeet.toFixed(2)} ft<br>` +
+            `<strong>Points:</strong> ${markers.length}`;
     });
 
-    async function sendToMail() {
-        const status = document.getElementById('status');
-        status.innerText = "Processing Screenshot...";
-        
-        const canvas = await html2canvas(document.getElementById('map'), { useCORS: true });
+    function resetSIM() {
+        simLine.setLatLngs([]);
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+        totalFeet = 0;
+        document.getElementById('sim-stats').innerHTML = "<em>Click map to start modeling...</em>";
+    }
+
+    // 4. Report Generation & Automatic Download
+    async function generateReport() {
+        const mapEl = document.getElementById('map');
+        const canvas = await html2canvas(mapEl, { useCORS: true });
         const imgData = canvas.toDataURL('image/png');
 
-        const payload = {
-            name: document.getElementById('name').value,
-            company: document.getElementById('company').value,
-            address: document.getElementById('address').value,
-            notes: document.getElementById('notes').value,
-            image: imgData
-        };
+        // Trigger Download of Screenshot
+        const link = document.createElement('a');
+        link.download = `Site_Report_${Date.now()}.png`;
+        link.href = imgData;
+        link.click();
 
-        const response = await fetch('http://localhost:3000/report', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        // Prepare Summary Text
+        const summary = `SITE ASSESSMENT REPORT\n` +
+                        `----------------------\n` +
+                        `Inspector: ${document.getElementById('name').value}\n` +
+                        `Company: ${document.getElementById('company').value}\n` +
+                        `Site: ${document.getElementById('address').value}\n\n` +
+                        `SIM DATA:\n` +
+                        `${document.getElementById('sim-stats').innerText.replace(/<br>/g, '\n')}\n\n` +
+                        `NOTES:\n` +
+                        `${document.getElementById('notes').value}`;
 
-        if (response.ok) status.innerText = "Apple Mail Opened!";
-        else status.innerText = "Error: Is the Node server running?";
+        document.getElementById('copy-box').innerText = summary;
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('output-modal').style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('output-modal').style.display = 'none';
     }
 </script>
 </body>
