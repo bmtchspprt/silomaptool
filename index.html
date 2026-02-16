@@ -2,156 +2,104 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dad Map App - Professional Site Assessment</title>
+    <title>Site Map & SIM Assessment</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background: #f4f7f9; color: #2c3e50; }
-        .container { max-width: 850px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        
-        /* Tool Toggle */
-        .tool-selector { display: flex; gap: 10px; margin-bottom: 25px; background: #e9ecef; padding: 6px; border-radius: 10px; }
-        .tool-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .tool-btn.active { background: #007bff; color: white; }
-
-        /* Form Layout */
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        .full-width { grid-column: span 2; }
-        
-        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; color: #7f8c8d; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #dcdde1; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
-        
-        /* Map Area */
-        #map { height: 400px; width: 100%; border-radius: 8px; border: 1px solid #ddd; margin-top: 10px; }
-        .btn-locate { background: #27ae60; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-        
-        .submit-btn { width: 100%; background: #007bff; color: white; border: none; padding: 18px; border-radius: 8px; font-size: 1.2rem; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        .submit-btn:hover { background: #0056b3; }
-        .status { margin-top: 15px; text-align: center; font-weight: 500; color: #34495e; }
-        .hidden { display: none; }
-        .offline-notice { padding: 50px; text-align: center; color: #95a5a6; border: 2px dashed #bdc3c7; border-radius: 8px; }
+        body { font-family: sans-serif; margin: 20px; background: #f4f4f4; }
+        .card { background: white; padding: 20px; border-radius: 10px; max-width: 900px; margin: auto; shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        #map { height: 400px; width: 100%; border-radius: 10px; margin: 15px 0; border: 2px solid #333; }
+        .btn { padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; }
+        .btn-blue { background: #007bff; width: 100%; font-size: 1.1rem; }
+        .btn-green { background: #28a745; }
+        .sim-active { border: 3px solid #e67e22 !important; }
+        .status { color: #666; font-size: 0.9rem; margin-top: 10px; text-align: center; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="tool-selector">
-        <button class="tool-btn active" onclick="switchTool('map')">Map Assessment</button>
-        <button class="tool-btn" onclick="switchTool('sim')">SIM Model (Offline)</button>
-    </div>
-
-    <div id="map-tool">
-        <form id="assessmentForm">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" id="userName" required placeholder="John Doe">
-                </div>
-                <div class="form-group">
-                    <label>Company</label>
-                    <input type="text" id="company" required placeholder="Acme Engineering">
-                </div>
-                <div class="form-group full-width">
-                    <label>Email Address</label>
-                    <input type="email" id="userEmail" required placeholder="john@company.com">
-                </div>
-                <div class="form-group full-width">
-                    <label>Site Address</label>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" id="siteAddress" required placeholder="123 Industrial Way, Dallas, TX">
-                        <button type="button" class="btn-locate" onclick="searchAddress()">Locate</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="map"></div>
-
-            <div class="form-group" style="margin-top: 20px;">
-                <label>Assessment Notes</label>
-                <textarea id="notes" rows="3" placeholder="Enter site-specific details..."></textarea>
-            </div>
-
-            <button type="submit" class="submit-btn" id="submitBtn">Generate Mail Report</button>
-            <div id="statusMsg" class="status"></div>
-        </form>
-    </div>
-
-    <div id="sim-tool" class="hidden">
-        <div class="offline-notice">
-            <h2>SIM Tool Offline</h2>
-            <p>The Site Information Model database is currently disconnected. Please use the Map Assessment tool.</p>
+<div class="card">
+    <h2>Site Assessment & SIM Tool</h2>
+    
+    <div class="grid">
+        <input type="text" id="name" placeholder="Name">
+        <input type="text" id="company" placeholder="Company">
+        <input type="email" id="email" placeholder="Your Email" style="grid-column: span 2;">
+        <div style="grid-column: span 2; display: flex; gap: 5px;">
+            <input type="text" id="address" placeholder="Enter Site Address">
+            <button class="btn btn-green" onclick="findAddress()">Locate</button>
         </div>
     </div>
+
+    <div id="map"></div>
+    
+    <div id="sim-display" style="background: #eee; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-family: monospace;">
+        SIM DATA: <span id="coords">Click map to drop SIM points</span>
+    </div>
+
+    <textarea id="notes" rows="3" placeholder="Field Notes..."></textarea>
+    <button class="btn btn-blue" onclick="sendToMail()">Generate Apple Mail Report</button>
+    <div id="status" class="status"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
-    // 1. Initialize Satellite Map
-    const map = L.map('map').setView([39.8283, -98.5795], 4); 
-    
-    // Using Esri Satellite Imagery
-    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-        crossOrigin: true
+    // Initialize Satellite Map
+    const map = L.map('map').setView([37.09, -95.71], 4);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Esri', crossOrigin: true
     }).addTo(map);
 
-    let currentMarker;
+    let marker;
+    let simPoints = [];
 
-    // 2. Locate Address
-    async function searchAddress() {
-        const addr = document.getElementById('siteAddress').value;
-        if (!addr) return;
-        
-        try {
-            const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}`);
-            const data = await resp.json();
-            if (data.length > 0) {
-                const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-                map.setView(coords, 18); // Zoom in close for satellite
-                if (currentMarker) map.removeLayer(currentMarker);
-                currentMarker = L.marker(coords).addTo(map);
-            }
-        } catch (e) { alert("Error finding address."); }
+    async function findAddress() {
+        const addr = document.getElementById('address').value;
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}`);
+        const data = await res.json();
+        if (data[0]) {
+            const pos = [data[0].lat, data[0].lon];
+            map.setView(pos, 19);
+            if (marker) marker.setLatLng(pos);
+            else marker = L.marker(pos).addTo(map);
+        }
     }
 
-    // 3. UI Toggle
-    function switchTool(tool) {
-        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-        event.target.classList.add('active');
-        document.getElementById('map-tool').classList.toggle('hidden', tool === 'sim');
-        document.getElementById('sim-tool').classList.toggle('hidden', tool === 'map');
-    }
-
-    // 4. Form Submit & Screenshot
-    document.getElementById('assessmentForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const status = document.getElementById('statusMsg');
-        status.innerText = "Capturing Satellite View...";
-
-        try {
-            const canvas = await html2canvas(document.getElementById('map'), { useCORS: true });
-            const mapImg = canvas.toDataURL('image/png');
-
-            const payload = {
-                user: { name: document.getElementById('userName').value, company: document.getElementById('company').value, email: document.getElementById('userEmail').value },
-                address: document.getElementById('siteAddress').value,
-                notes: document.getElementById('notes').value,
-                mapImage: mapImg
-            };
-
-            const response = await fetch('http://localhost:3000/submit-form', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (response.ok) status.innerText = "Success! Apple Mail is opening.";
-            else status.innerText = "Server Error. Is server.js running?";
-        } catch (err) { status.innerText = "Error: " + err.message; }
+    // SIM Tool: Track coordinates and distances
+    map.on('click', (e) => {
+        const { lat, lng } = e.latlng;
+        simPoints.push(e.latlng);
+        L.circle([lat, lng], { radius: 1, color: 'orange' }).addTo(map);
+        document.getElementById('coords').innerText = `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
     });
+
+    async function sendToMail() {
+        const status = document.getElementById('status');
+        status.innerText = "Processing Screenshot...";
+        
+        const canvas = await html2canvas(document.getElementById('map'), { useCORS: true });
+        const imgData = canvas.toDataURL('image/png');
+
+        const payload = {
+            name: document.getElementById('name').value,
+            company: document.getElementById('company').value,
+            address: document.getElementById('address').value,
+            notes: document.getElementById('notes').value,
+            image: imgData
+        };
+
+        const response = await fetch('http://localhost:3000/report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) status.innerText = "Apple Mail Opened!";
+        else status.innerText = "Error: Is the Node server running?";
+    }
 </script>
 </body>
 </html>
